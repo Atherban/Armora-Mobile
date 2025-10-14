@@ -9,7 +9,7 @@ export const useAuthStore = create((set, get) => ({
   isLoading: false,
   isCheckingAuth: true,
 
-  // ✅ REGISTER
+  // REGISTER
   register: async (username, email, password) => {
     set({ isLoading: true });
     try {
@@ -27,7 +27,7 @@ export const useAuthStore = create((set, get) => ({
 
       set({ token: data.token, user: data.user, isLoading: false });
 
-      // ✅ Automatically navigate after signup
+      // Automatically navigate after signup
       router.replace("/(tabs)");
 
       return { success: true };

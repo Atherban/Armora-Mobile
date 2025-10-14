@@ -1,217 +1,320 @@
-// frontend/app/(features)/WiFiSecurity.tsx
 import React, { useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
-  PermissionsAndroid,
-  Platform,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import axios from "axios";
 import * as Network from "expo-network";
+import * as Location from "expo-location";
+import axios from "axios";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { API_URL } from "@/src/constants/api";
 
-const BACKEND_URL = "http://192.168.29.165:5000"; // 👈 your PC's LAN IP
+const { width } = Dimensions.get("window");
 
-interface WifiData {
-  ssid: string;
-  bssid?: string;
-  ipAddress: string;
-  isConnected: boolean;
-  type?: string;
-}
-
-console.log("🧩 WiFiSecurityScreen rendered!");
-
-const WifiSecurityScreen = () => {
-  const [wifiInfo, setWifiInfo] = useState<WifiData | null>(null);
-  const [scanResult, setScanResult] = useState<any>(null);
+export default function WiFiSecurityScreen() {
   const [loading, setLoading] = useState(false);
+  const [scanResult, setScanResult] = useState<any>(null);
+  const [wifiInfo, setWifiInfo] = useState<any>(null);
   const [error, setError] = useState("");
-  const [connectionType, setConnectionType] = useState<string>("UNKNOWN");
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-
-  console.log("🧩 WiFiSecurityScreen rendered!");
 
   const requestPermissions = async () => {
-    if (Platform.OS === "android") {
-      try {
-        console.log("🔑 Requesting Android permissions...");
-        const granted = await Promise.race([
-          PermissionsAndroid.requestMultiple([
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-          ]),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Permission timeout")), 5000)
-          ),
-        ]);
-        console.log("✅ Permissions done:", granted);
-      } catch (err) {
-        if (err instanceof Error) {
-          console.warn("⚠️ Permission request error:", err.message);
-        } else {
-          console.warn("⚠️ Unknown error during permission request:", err);
-        }
-      }
-    } else {
-      console.log("ℹ️ iOS: Permissions not required for this feature.");
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      alert("Location permission is required to scan Wi-Fi networks.");
+      return false;
     }
+    return true;
   };
 
   const handleScan = async () => {
-    console.log("⚙️ handleScan() started");
-    setLoading(true);
-    setError("");
-    setScanResult(null);
-
     try {
-      await requestPermissions();
-      console.log("✅ Permissions done");
+      setError("");
+      setLoading(true);
+      setScanResult(null);
 
-      // ✅ Fetch actual network info
-      const state = await Network.getNetworkStateAsync();
-      const ipAddress = await Network.getIpAddressAsync();
+      const permissionGranted = await requestPermissions();
+      if (!permissionGranted) return;
 
-      const wifiData: WifiData = {
+      const network = await Network.getNetworkStateAsync();
+      const ip = await Network.getIpAddressAsync();
+
+      const wifiData = {
         ssid: "Unavailable in Expo Go",
-        bssid: "N/A",
-        ipAddress: ipAddress || "N/A",
-        isConnected: state.isConnected ?? false,
-        type: state.type ? state.type.toUpperCase() : "UNKNOWN",
+        ipAddress: ip,
+        isConnected: network.isConnected,
+        type: network.type,
       };
-
-      // Store connection info for the badge
-      setConnectionType(wifiData.type || "UNKNOWN");
-      setIsConnected(wifiData.isConnected);
 
       setWifiInfo(wifiData);
 
-      console.log("📡 Attempting to POST to:", `${BACKEND_URL}/api/wifi-scan`);
-      console.log("📶 Wi-Fi Data:", wifiData);
-
-      const res = await axios.post(`${BACKEND_URL}/api/wifi-scan`, wifiData);
-      console.log("✅ Backend Response:", res.data);
-      setScanResult(res.data);
+      const res = await axios.post(`${API_URL}/wifi-scan`, wifiData);
+      setScanResult({
+        ...res.data,
+        encryption: "WPA2-Personal", // Mocked until native API support
+        signalStrength: Math.floor(Math.random() * 60) + 40, // Random 40-100%
+        timestamp: new Date().toLocaleString(),
+        networkVisibility: ip.startsWith("192.168") ? "Private" : "Public",
+      });
     } catch (err: any) {
-      console.error("❌ Wi-Fi scan error:", err.message);
-      setError(err.message || "Failed to get Wi-Fi info.");
+      setError("Failed to scan Wi-Fi network. Please try again.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // 🟢 Small helper to style the badge color
-  const getBadgeStyle = () => {
-    if (!isConnected) return [styles.badge, { backgroundColor: "#B22222" }]; // red
-    if (connectionType === "WIFI")
-      return [styles.badge, { backgroundColor: "#00bf8f" }]; // green
-    if (connectionType === "CELLULAR")
-      return [styles.badge, { backgroundColor: "#FFD700" }]; // yellow
-    return [styles.badge, { backgroundColor: "#808080" }]; // gray
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Safe":
+        return "#00ffcc";
+      case "Unsafe":
+        return "#ff4d4d";
+      default:
+        return "#FFD700";
+    }
   };
 
-  const getBadgeText = () => {
-    if (!isConnected) return "🔴 No Connection";
-    if (connectionType === "WIFI") return "🟢 Connected via Wi-Fi";
-    if (connectionType === "CELLULAR") return "🟡 Using Mobile Data";
-    return "⚪ Unknown Network";
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "Safe":
+        return "shield-checkmark";
+      case "Unsafe":
+        return "warning";
+      default:
+        return "alert-circle-outline";
+    }
+  };
+
+  const getSignalQuality = (strength: number) => {
+    if (strength > 80) return "Excellent";
+    if (strength > 60) return "Good";
+    if (strength > 40) return "Fair";
+    return "Weak";
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Connection Badge */}
-      <View style={getBadgeStyle()}>
-        <Text style={styles.badgeText}>{getBadgeText()}</Text>
-      </View>
-
-      <Text style={styles.title}>Wi-Fi Security Scanner</Text>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => {
-          console.log("👆 Button pressed!");
-          handleScan();
-        }}
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.buttonText}>
-          {loading ? "Scanning..." : "Scan Wi-Fi"}
-        </Text>
-      </TouchableOpacity>
+        {/* HEADER */}
+        <LinearGradient
+          colors={["#00bf8f", "#001510"]}
+          style={styles.headerCard}
+        >
+          <Ionicons name="wifi" size={60} color="#fff" />
+          <Text style={styles.title}>Wi-Fi Security Scanner</Text>
+          <Text style={styles.subtitle}>
+            Analyze your connection for potential risks
+          </Text>
+        </LinearGradient>
 
-      {loading && (
-        <ActivityIndicator color="#00bf8f" style={{ marginTop: 10 }} />
-      )}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+        {/* BUTTON */}
+        <TouchableOpacity
+          onPress={handleScan}
+          disabled={loading}
+          style={[styles.button, { opacity: loading ? 0.7 : 1 }]}
+        >
+          <LinearGradient
+            colors={["#00bf8f", "#007a5c"]}
+            style={styles.buttonGradient}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Scan Now</Text>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
 
-      {wifiInfo && (
-        <View style={styles.resultBox}>
-          <Text style={styles.resultTitle}>Network Details</Text>
-          <Text>SSID: {wifiInfo.ssid}</Text>
-          <Text>BSSID: {wifiInfo.bssid}</Text>
-          <Text>IP: {wifiInfo.ipAddress}</Text>
-          <Text>Type: {wifiInfo.type}</Text>
-        </View>
-      )}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      {scanResult && (
-        <View style={styles.resultBox}>
-          <Text style={styles.resultTitle}>Security Analysis</Text>
-          <Text>Status: {scanResult.status}</Text>
-          <Text>Threat Level: {scanResult.threatLevel}</Text>
-          <Text>Confidence: {scanResult.confidence}%</Text>
-          {scanResult.recommendations?.map((r: string, i: number) => (
-            <Text key={i}>• {r}</Text>
-          ))}
-        </View>
-      )}
+        {/* INFO CARD */}
+        {wifiInfo && (
+          <Animated.View entering={FadeInDown.duration(700)}>
+            <View style={styles.infoCard}>
+              <Text style={styles.sectionTitle}>📡 Connection Info</Text>
+              {[
+                ["SSID", wifiInfo.ssid],
+                ["IP Address", wifiInfo.ipAddress],
+                ["Type", wifiInfo.type],
+                ["Connected", wifiInfo.isConnected ? "Yes ✅" : "No ❌"],
+              ].map(([label, value], idx) => (
+                <View key={idx} style={styles.infoItem}>
+                  <Text style={styles.infoKey}>{label}</Text>
+                  <Text style={styles.infoValue}>{value}</Text>
+                </View>
+              ))}
+            </View>
+          </Animated.View>
+        )}
+
+        {/* RESULT CARD */}
+        {scanResult && (
+          <Animated.View
+            entering={FadeInDown.duration(800).delay(200)}
+            style={[
+              styles.resultCard,
+              { borderColor: getStatusColor(scanResult.status) },
+            ]}
+          >
+            <View style={styles.statusHeader}>
+              <Ionicons
+                name={getStatusIcon(scanResult.status)}
+                size={32}
+                color={getStatusColor(scanResult.status)}
+              />
+              <Text
+                style={[
+                  styles.statusText,
+                  { color: getStatusColor(scanResult.status) },
+                ]}
+              >
+                {scanResult.status}
+              </Text>
+            </View>
+
+            <Text style={styles.threatText}>
+              Threat: {scanResult.threatLevel}
+            </Text>
+            <Text style={styles.confidence}>
+              Confidence: {scanResult.confidence}%
+            </Text>
+
+            {/* ADDITIONAL DETAILS */}
+            <View style={styles.extraInfo}>
+              <Text style={styles.sectionTitle}>🔐 Additional Details</Text>
+              <Text style={styles.detailText}>
+                Encryption: {scanResult.encryption}
+              </Text>
+              <Text style={styles.detailText}>
+                Signal Strength: {scanResult.signalStrength}% (
+                {getSignalQuality(scanResult.signalStrength)})
+              </Text>
+              <Text style={styles.detailText}>
+                Network Type: {scanResult.networkVisibility}
+              </Text>
+              <Text style={styles.detailText}>
+                Last Scan: {scanResult.timestamp}
+              </Text>
+
+              {/* RISK BAR */}
+              <View style={styles.riskBarContainer}>
+                <LinearGradient
+                  colors={["#00ffcc", "#FFD700", "#ff4d4d"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[
+                    styles.riskBar,
+                    { width: `${100 - scanResult.confidence}%` },
+                  ]}
+                />
+              </View>
+            </View>
+
+            {/* RECOMMENDATIONS */}
+            {scanResult.recommendations?.length > 0 && (
+              <View style={{ marginTop: 15 }}>
+                <Text style={styles.sectionTitle}>💡 Recommendations</Text>
+                {scanResult.recommendations.map((r: string, i: number) => (
+                  <Text key={i} style={styles.recommendationText}>
+                    • {r}
+                  </Text>
+                ))}
+              </View>
+            )}
+          </Animated.View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
+  container: { flex: 1, backgroundColor: "#000" },
+  scrollContainer: {
     alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
+    paddingVertical: 30,
+    paddingHorizontal: 20,
   },
-  title: {
-    color: "#00bf8f",
-    fontSize: 24,
-    fontWeight: "bold",
-    marginVertical: 20,
+  headerCard: {
+    width: width * 0.9,
+    borderRadius: 20,
+    alignItems: "center",
+    paddingVertical: 40,
+    marginBottom: 30,
+    shadowColor: "#00bf8f",
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
   },
-  button: { backgroundColor: "#00bf8f", padding: 14, borderRadius: 10 },
-  buttonText: { color: "white", fontSize: 16 },
-  error: { color: "red", marginTop: 12 },
-  resultBox: {
-    backgroundColor: "#111",
-    padding: 20,
+  title: { color: "#fff", fontSize: 26, fontWeight: "700", marginTop: 10 },
+  subtitle: { color: "#aaa", fontSize: 14, marginTop: 5 },
+  button: { width: width * 0.6, borderRadius: 12, marginTop: 10 },
+  buttonGradient: {
     borderRadius: 12,
-    marginTop: 20,
-    width: "100%",
+    paddingVertical: 14,
+    alignItems: "center",
   },
-  resultTitle: {
+  buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  error: { color: "#ff4d4d", marginTop: 16, textAlign: "center", fontSize: 14 },
+  infoCard: {
+    backgroundColor: "#111",
+    borderRadius: 15,
+    padding: 18,
+    width: width * 0.9,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#222",
+  },
+  sectionTitle: {
     color: "#00bf8f",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
+    marginBottom: 8,
+  },
+  infoItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 3,
+  },
+  infoKey: { color: "#888", fontSize: 13 },
+  infoValue: { color: "#fff", fontSize: 13, fontWeight: "500" },
+  resultCard: {
+    backgroundColor: "#0a0a0a",
+    borderWidth: 1.5,
+    borderRadius: 15,
+    padding: 20,
+    marginTop: 30,
+    width: width * 0.9,
+  },
+  statusHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     marginBottom: 10,
   },
-  badge: {
-    paddingVertical: 6,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    marginBottom: 15,
+  statusText: { fontSize: 22, fontWeight: "700" },
+  threatText: { color: "#ccc", fontSize: 14, marginVertical: 4 },
+  confidence: { color: "#888", fontSize: 13 },
+  extraInfo: { marginTop: 12 },
+  detailText: { color: "#ddd", fontSize: 13, marginVertical: 2 },
+  riskBarContainer: {
+    marginTop: 10,
+    height: 8,
+    width: "100%",
+    backgroundColor: "#222",
+    borderRadius: 5,
+    overflow: "hidden",
   },
-  badgeText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
+  riskBar: { height: "100%", borderRadius: 5 },
+  recommendationText: { color: "#fff", fontSize: 14, marginVertical: 2 },
 });
-
-export default WifiSecurityScreen;

@@ -6,6 +6,7 @@ import { useFonts } from "expo-font";
 
 import { useAuthStore } from "../src/store/auth.store";
 import { useEffect } from "react";
+import COLORS from "@/src/constants/colors";
 
 export default function RootLayout() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function RootLayout() {
   }, [user, token, segments]);
 
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider style={{ backgroundColor: COLORS.background }}>
       <SafeScreen>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />

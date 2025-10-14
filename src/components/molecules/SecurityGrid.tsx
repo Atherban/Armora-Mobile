@@ -11,7 +11,7 @@ const CARD_GRADIENT = ["#00bf8f", "#001510"];
 const VALID_ROUTES = [
   "ScanQRCode",
   "WiFiSecurity",
-  "ScanWebsite",
+  "ScanSite",
   "OTPSecurity",
   "DataBreachSecurity",
   "AppPermissions",
@@ -42,7 +42,7 @@ const features: Feature[] = [
   {
     id: "3",
     label: "Scan Website",
-    redirect: "ScanWebsite",
+    redirect: "ScanSite",
     icon: <Feather name="globe" size={28} color="#fff" />,
   },
   {
