@@ -7,6 +7,7 @@ import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import * as Animatable from "react-native-animatable";
 import Score from "@/src/components/molecules/Score";
 import { useScoreStore } from "../../store/score.store.js";
+import COLORS from "@/src/constants/colors.js";
 
 const HomeScreen = () => {
   const { deviceSecurity, analyzeDeviceSecurity, isLoading } = useScoreStore();
@@ -16,7 +17,7 @@ const HomeScreen = () => {
   }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "black" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.black }}>
       <View style={styles.scrollContent}>
         {/* Animated Score and HomeCards */}
         <Animatable.View

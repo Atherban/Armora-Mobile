@@ -11,7 +11,12 @@ export default function SafeScreen({ children }: SafeScreenProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, backgroundColor: COLORS.black },
+      ]}
+    >
       {children}
     </View>
   );

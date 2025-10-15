@@ -1,4 +1,3 @@
-// src/screens/features/DeviceSecurityScreen.js
 import React, { useEffect } from "react";
 import {
   View,
@@ -30,6 +29,14 @@ const DeviceSecurityScreen = () => {
     await analyzeDeviceSecurity();
   };
 
+  // Determine gauge color based on numeric score (0-10)
+  const getGaugeColor = (score: number) => {
+    if (score >= 8) return "#3ec46d"; // green
+    if (score >= 5) return "#f7c873"; // yellow/orange
+    return "#e14b5a"; // red
+  };
+
+  // Determine threat level text color
   const getThreatColor = (threatLevel: string) => {
     switch (threatLevel) {
       case "High":
@@ -79,7 +86,11 @@ const DeviceSecurityScreen = () => {
               duration={800}
               style={{ alignItems: "center", marginVertical: 20 }}
             >
-              <Score score={deviceSecurity.score} outOf={10} />
+              <Score
+                score={deviceSecurity.score}
+                outOf={10}
+                color={getGaugeColor(deviceSecurity.score)} // <-- dynamic color
+              />
             </Animatable.View>
 
             {/* Summary Card */}

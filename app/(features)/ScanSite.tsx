@@ -87,10 +87,10 @@ export default function ScanSiteScreen() {
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.header}>Website Security Scanner</Text>
+        <Text style={styles.header}>URL Security Scanner</Text>
         <Text style={[styles.descText, { textAlign: "center" }]}>
-          Advanced threat detection that analyzes websites for multiple security
-          risks.
+          Advanced threat detection that analyzes URLs & sites for multiple
+          security risks.
         </Text>
 
         {/* 🧭 Gauge */}

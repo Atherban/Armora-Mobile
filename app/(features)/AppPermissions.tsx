@@ -2,270 +2,134 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
+  TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  ScrollView,
-  Platform,
+  StyleSheet,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
-} from "react-native-reanimated";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import axios from "axios";
+import { API_URL } from "@/src/constants/api";
 import { LinearGradient } from "expo-linear-gradient";
 
-// --- Interface to represent analyzed app data structure ---
-interface AnalyzedApp {
-  name: string;
-  permissions: string[];
-  risk: "Danger" | "Medium" | "Safe";
-}
+const AppPermissionAnalyzer = () => {
+  const [pkg, setPkg] = useState("");
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-// --- Constants for consistent design styling ---
-const ACCENT = "#00bf8f";
-const DARK_BG = "#000";
-const CARD_BG = "#151515";
-const SPACING = 18;
+  const analyzeApp = async () => {
+    if (!pkg.trim()) return;
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await axios.post(`${API_URL}/analyze-apps`, {
+        packageName: pkg,
+      });
+      setResult(res.data);
+    } catch (err) {
+      console.error("Failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-// --- Mock function to simulate analyzing installed apps (fake async delay) ---
-const mockAnalyzeApps = () => {
-  const apps: AnalyzedApp[] = [
-    {
-      name: "BankingApp",
-      permissions: ["CAMERA", "LOCATION", "STORAGE"],
-      risk: "Danger",
-    },
-    { name: "GamePro", permissions: ["STORAGE"], risk: "Medium" },
-    { name: "Notes", permissions: [], risk: "Safe" },
-    { name: "SocialX", permissions: ["CONTACTS", "LOCATION"], risk: "Medium" },
-    { name: "VPNGuard", permissions: ["NONE"], risk: "Safe" },
-    { name: "UnknownApp", permissions: ["SMS", "CALL_LOG"], risk: "Danger" },
-  ];
+  return (
+    <LinearGradient
+      colors={["#000", "#0a0a0a", "#101010"]}
+      style={styles.container}
+    >
+      <Text style={styles.title}>App Permission Analyzer</Text>
+      <Text style={styles.subtitle}>
+        Enter an Android package name to check for potential threats
+      </Text>
 
-  // Simulates a delay before returning analyzed app data
-  return new Promise<AnalyzedApp[]>((resolve) =>
-    setTimeout(() => resolve(apps), 1500)
+      <TextInput
+        placeholder="e.g., com.example.myapp"
+        placeholderTextColor="#666"
+        style={styles.input}
+        value={pkg}
+        onChangeText={setPkg}
+      />
+
+      <TouchableOpacity
+        onPress={analyzeApp}
+        style={styles.button}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? "Analyzing..." : "Scan App"}
+        </Text>
+      </TouchableOpacity>
+
+      {loading && (
+        <ActivityIndicator color="#00bf8f" style={{ marginTop: 16 }} />
+      )}
+
+      {result && (
+        <Animated.View entering={FadeInDown.duration(500)} style={styles.card}>
+          <Text
+            style={[
+              styles.resultTitle,
+              { color: result.risk === "Danger" ? "#ff4d4f" : "#00bf8f" },
+            ]}
+          >
+            {result.risk} ({result.confidence}%)
+          </Text>
+          <Text style={styles.resultText}>{result.description}</Text>
+          <Text style={styles.pkgText}>{result.packageName}</Text>
+        </Animated.View>
+      )}
+    </LinearGradient>
   );
 };
 
-export default function AppPermissions() {
-  // --- State management ---
-  const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<AnalyzedApp[]>([]);
-
-  // --- Handler to trigger app scan (simulated) ---
-  const handleScan = async () => {
-    setLoading(true);
-    const analyzedApps = await mockAnalyzeApps();
-    setResults(analyzedApps);
-    setLoading(false);
-  };
-
-  // --- Categorize analyzed apps based on risk level ---
-  const dangerApps = results.filter((a) => a.risk === "Danger");
-  const mediumApps = results.filter((a) => a.risk === "Medium");
-  const safeApps = results.filter((a) => a.risk === "Safe");
-
-  // --- Function to render each risk category section dynamically ---
-  const renderRiskSection = (
-    title: string,
-    data: AnalyzedApp[],
-    color: string,
-    icon: keyof typeof Ionicons.glyphMap
-  ) => (
-    <View style={{ marginBottom: 28 }}>
-      {/* Section Header */}
-      <Text style={[styles.sectionTitle, { color }]}>{title}</Text>
-
-      {/* Empty state when no apps found in this risk category */}
-      {data.length === 0 ? (
-        <Text style={styles.emptyText}>
-          No {title.toLowerCase()} apps found.
-        </Text>
-      ) : (
-        // Render app list with smooth fade-in animation
-        data.map((app) => (
-          <Animated.View
-            entering={FadeInDown.duration(400)}
-            key={app.name}
-            style={[styles.appCard, { borderLeftColor: color }]}
-          >
-            {/* Card Header (icon + name) */}
-            <View style={styles.cardHeader}>
-              <Ionicons name={icon} size={20} color={color} />
-              <Text style={[styles.appName, { color }]}>{app.name}</Text>
-            </View>
-
-            {/* Permissions List */}
-            <Text style={styles.permText}>
-              Permissions: {app.permissions.join(", ") || "None"}
-            </Text>
-          </Animated.View>
-        ))
-      )}
-    </View>
-  );
-
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {/* --- Title Section --- */}
-        <Animated.View entering={FadeInUp.duration(600)}>
-          <Text style={styles.title}>App Analysis</Text>
-          <Text style={styles.subtitle}>
-            Scan your installed apps to assess their security level instantly.
-          </Text>
-        </Animated.View>
-
-        {/* --- Scan Button --- */}
-        <Animated.View entering={FadeIn.duration(800)} style={styles.center}>
-          <TouchableOpacity
-            style={[styles.scanButton, loading && { opacity: 0.6 }]}
-            onPress={handleScan}
-            disabled={loading}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Scan Installed Apps"
-          >
-            <Ionicons name="shield-checkmark" color={ACCENT} size={22} />
-            <Text style={styles.scanButtonText}>
-              {loading ? "Scanning..." : "Scan Installed Apps"}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Loader indicator while scanning */}
-          {loading && (
-            <ActivityIndicator color={ACCENT} style={{ marginTop: 12 }} />
-          )}
-        </Animated.View>
-
-        {/* --- Results Section --- */}
-        <Animated.View entering={FadeInDown.duration(700)} style={{ flex: 1 }}>
-          {/* Subtle gradient overlay for smooth transition effect */}
-          <LinearGradient
-            colors={["#000", "rgba(0,0,0,0.5)", "transparent"]}
-            style={{
-              position: "absolute",
-              zIndex: 1,
-              top: -20,
-              height: 60,
-              width: "100%",
-            }}
-          />
-
-          {/* ScrollView to display categorized app results */}
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 80 }}
-          >
-            {/* Render risk-level sections dynamically once results are loaded */}
-            {results.length > 0 && (
-              <>
-                {renderRiskSection("Danger", dangerApps, "#ff4d4f", "alert")}
-                {renderRiskSection("Medium", mediumApps, "#ffa940", "warning")}
-                {renderRiskSection(
-                  "Safe",
-                  safeApps,
-                  ACCENT,
-                  "shield-checkmark"
-                )}
-              </>
-            )}
-          </ScrollView>
-        </Animated.View>
-      </View>
-    </SafeAreaView>
-  );
-}
+export default AppPermissionAnalyzer;
 
 const styles = StyleSheet.create({
-  // --- Layout Containers ---
-  safeArea: { flex: 1, backgroundColor: DARK_BG },
-  container: { flex: 1, padding: SPACING, backgroundColor: DARK_BG, gap: 12 },
-
-  // --- Header Text ---
+  container: {
+    flex: 1,
+    padding: 20,
+    justifyContent: "center",
+    backgroundColor: "#000",
+  },
   title: {
-    marginTop: 12,
+    color: "#00bf8f",
+    fontSize: 22,
     textAlign: "center",
-    fontSize: 26,
     fontWeight: "bold",
-    color: ACCENT,
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    textShadowColor: ACCENT,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 20,
+    marginBottom: 10,
   },
   subtitle: {
-    marginTop: 6,
-    color: "#ccc",
+    color: "#bbb",
+    fontSize: 14,
     textAlign: "center",
-    fontSize: 14,
-    lineHeight: 20,
-    opacity: 0.8,
-    maxWidth: 340,
-    alignSelf: "center",
+    marginBottom: 20,
   },
-
-  // --- Button Styles ---
-  center: { alignItems: "center", marginVertical: 24 },
-  scanButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: CARD_BG,
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 14,
-    justifyContent: "center",
-    gap: 10,
-    shadowColor: ACCENT,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  scanButtonText: {
+  input: {
+    backgroundColor: "#1a1a1a",
     color: "#fff",
-    fontSize: 17,
-    fontWeight: "600",
-    letterSpacing: 0.5,
+    borderRadius: 10,
+    padding: 12,
+    borderColor: "#00bf8f",
+    borderWidth: 1,
+    marginBottom: 12,
   },
-
-  // --- Section & Card Styles ---
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 8,
-    letterSpacing: 0.6,
+  button: {
+    backgroundColor: "#00bf8f",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
   },
-  emptyText: {
-    color: "#666",
-    fontSize: 14,
-    fontStyle: "italic",
-    marginLeft: 6,
-  },
-  appCard: {
-    backgroundColor: CARD_BG,
+  buttonText: { color: "#fff", fontWeight: "600" },
+  card: {
+    backgroundColor: "#151515",
     borderRadius: 12,
-    padding: 14,
-    marginVertical: 6,
+    padding: 16,
+    marginTop: 20,
     borderLeftWidth: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
+    borderLeftColor: "#00bf8f",
   },
-  cardHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
-  appName: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  permText: {
-    color: "#aaa",
-    fontSize: 13,
-    marginTop: 4,
-  },
+  resultTitle: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
+  resultText: { color: "#ccc", fontSize: 14, lineHeight: 20 },
+  pkgText: { color: "#666", fontSize: 12, marginTop: 6 },
 });

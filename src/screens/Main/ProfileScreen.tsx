@@ -11,7 +11,6 @@ import {
 import styles from "../../assets/styles/profile.styles";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
-import ProfileHeader from "../../components/molecules/ProfileHeader";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -58,7 +57,7 @@ const ProfileScreen = () => {
 
   if (loading) {
     return (
-      <View>
+      <View style={{ backgroundColor: COLORS.black, flex: 1 }}>
         <ActivityIndicator size="large" color="#00bf8f" />
       </View>
     );
@@ -73,19 +72,19 @@ const ProfileScreen = () => {
 
   const maxContentWidth = Math.min(width * 0.96, 420);
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "black" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.black }}>
       <View
         style={{
           flex: 1,
           justifyContent: "space-between",
           padding: SPACING,
-          backgroundColor: "black", // Ensure parent is black
+          backgroundColor: COLORS.black, // Ensure parent is black
         }}
       >
         {/* App Title and Tagline (animated) */}
         <Animated.View
           entering={FadeInUp.duration(600)}
-          style={[styles.titleShadowWrapper, { backgroundColor: "black" }]}
+          style={[styles.titleShadowWrapper, { backgroundColor: COLORS.black }]}
         >
           <View
             style={[
@@ -144,7 +143,10 @@ const ProfileScreen = () => {
         {/* Main Actions Section (animated) */}
         <Animated.View
           entering={FadeInDown.duration(700)}
-          style={[styles.actionsShadowWrapper, { backgroundColor: "black" }]}
+          style={[
+            styles.actionsShadowWrapper,
+            { backgroundColor: COLORS.black },
+          ]}
         >
           <View
             style={[
