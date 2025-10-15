@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { API_URL } from "@/src/constants/api";
+import COLORS from "@/src/constants/colors";
 
 const { width } = Dimensions.get("window");
 
@@ -210,12 +211,12 @@ export default function WiFiSecurityScreen() {
               {/* RISK BAR */}
               <View style={styles.riskBarContainer}>
                 <LinearGradient
-                  colors={["#00ffcc", "#FFD700", "#ff4d4d"]}
+                  colors={["#ff4d4d", "#FFD700", COLORS.primary]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={[
                     styles.riskBar,
-                    { width: `${100 - scanResult.confidence}%` },
+                    { width: `${scanResult.confidence}%` },
                   ]}
                 />
               </View>

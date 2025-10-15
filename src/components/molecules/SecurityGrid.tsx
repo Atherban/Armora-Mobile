@@ -12,7 +12,7 @@ const VALID_ROUTES = [
   "ScanQRCode",
   "WiFiSecurity",
   "ScanSite",
-  "OTPSecurity",
+  "SystemSecurity",
   "DataBreachSecurity",
   "AppPermissions",
 ] as const;
@@ -47,9 +47,9 @@ const features: Feature[] = [
   },
   {
     id: "4",
-    label: "OTP Security",
-    redirect: "OTPSecurity",
-    icon: <MaterialIcons name="chat-bubble-outline" size={28} color="#fff" />,
+    label: "System Security",
+    redirect: "SystemSecurity",
+    icon: <MaterialIcons name="security" size={28} color="#fff" />,
   },
   {
     id: "5",

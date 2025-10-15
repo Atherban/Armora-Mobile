@@ -1,30 +1,57 @@
-import { StyleSheet, Text, View } from "react-native";
-import React from "react";
+import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
+import React, { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import HomeCards from "@/src/components/atoms/HomeCards";
 import SecurityGrid from "@/src/components/molecules/SecurityGrid";
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
-} from "react-native-reanimated";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import * as Animatable from "react-native-animatable";
 import Score from "@/src/components/molecules/Score";
+import { useScoreStore } from "../../store/score.store.js";
 
 const HomeScreen = () => {
+  const { deviceSecurity, analyzeDeviceSecurity, isLoading } = useScoreStore();
+
+  useEffect(() => {
+    analyzeDeviceSecurity();
+  }, []);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "black" }}>
       <View style={styles.scrollContent}>
-        {/* Animate Score and HomeCards together for unified entrance */}
-        <Animated.View entering={FadeInDown.duration(800)}>
-          <Score score={3} outOf={5} />
+        {/* Animated Score and HomeCards */}
+        <Animatable.View
+          animation="fadeInDown"
+          duration={800}
+          style={{ alignItems: "center" }}
+        >
+          {isLoading ? (
+            <ActivityIndicator
+              size="large"
+              color="#00bf8f"
+              style={{ marginVertical: 20 }}
+            />
+          ) : (
+            <Animatable.View
+              animation="pulse"
+              iterationCount={1}
+              duration={800}
+            >
+              <Score score={deviceSecurity.score} outOf={10} />
+            </Animatable.View>
+          )}
+
           <HomeCards />
-        </Animated.View>
+        </Animatable.View>
+
+        {/* Header Text */}
         <Animated.Text
           entering={FadeInUp.duration(800).delay(200)}
           style={styles.headerText}
         >
           Explore Your Security Suite
         </Animated.Text>
+
+        {/* Security Grid */}
         <Animated.View
           entering={FadeInDown.duration(800).delay(400)}
           style={styles.tilecontainer}

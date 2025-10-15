@@ -7,6 +7,7 @@ import { useFonts } from "expo-font";
 import { useAuthStore } from "../src/store/auth.store";
 import { useEffect } from "react";
 import COLORS from "@/src/constants/colors";
+import { StackScreen } from "react-native-screens";
 
 export default function RootLayout() {
   const router = useRouter();
