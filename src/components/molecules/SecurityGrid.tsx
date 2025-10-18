@@ -14,7 +14,7 @@ const VALID_ROUTES = [
   "ScanSite",
   "SystemSecurity",
   "DataBreachSecurity",
-  "AppPermissions",
+  "AIAgent",
 ] as const;
 
 type ValidRoute = (typeof VALID_ROUTES)[number];
@@ -59,8 +59,8 @@ const features: Feature[] = [
   },
   {
     id: "6",
-    label: "App Permissions",
-    redirect: "AppPermissions",
+    label: "Bot-X",
+    redirect: "AIAgent",
     icon: <Ionicons name="logo-android" size={28} color="#fff" />,
   },
 ];
