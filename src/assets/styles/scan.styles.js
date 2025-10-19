@@ -13,6 +13,94 @@ export const styles = StyleSheet.create({
     marginVertical: 16,
     letterSpacing: 1,
   },
+  headerSection: {
+    alignItems: "center",
+    marginBottom: 30,
+  },
+  headerIcon: {
+    backgroundColor: "#f0f9f7",
+    padding: 16,
+    borderRadius: 50,
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 22,
+    marginTop: 8,
+  },
+  inputSection: {
+    width: "100%",
+    gap: 16,
+  },
+  scanButtonDisabled: {
+    opacity: 0.6,
+  },
+  scanIcon: {
+    marginRight: 6,
+  },
+  scoreContainer: {
+    position: "absolute",
+    bottom: 30,
+    alignItems: "center",
+  },
+  scoreText: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  scoreLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 4,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  metricsGrid: {
+    gap: 12,
+    marginBottom: 16,
+  },
+  alertBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+    marginBottom: 20,
+  },
+  alertText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 16,
+  },
+  checkDetail: {
+    marginBottom: 16,
+  },
+  summary: {
+    marginTop: 8,
+  },
+  emptyState: {
+    alignItems: "center",
+    padding: 40,
+    opacity: 0.6,
+  },
+  emptyStateText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+  },
 
   /** Gauge */
   gaugeWrapper: {
@@ -130,4 +218,5 @@ export const styles = StyleSheet.create({
   },
 
   label: { color: "#ccc", fontSize: 15 },
+
 });
