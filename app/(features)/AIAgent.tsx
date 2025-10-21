@@ -160,11 +160,7 @@ const PriorityFixesSection = ({ fixes, onFixPress }) => {
         <Text style={styles.sectionTitle}>Priority Fixes</Text>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.fixesScroll}
-      >
+      <View style={styles.fixesScroll}>
         {fixes.map((fix) => (
           <View key={fix.id} style={styles.fixCard}>
             <View style={styles.fixHeader}>
@@ -185,7 +181,7 @@ const PriorityFixesSection = ({ fixes, onFixPress }) => {
             </TouchableOpacity>
           </View>
         ))}
-      </ScrollView>
+      </View>
     </Animated.View>
   );
 };
@@ -241,10 +237,7 @@ const RecommendationsSection = ({ recommendations, onExport }) => (
       <Text style={styles.sectionTitle}>Security Recommendations</Text>
     </View>
 
-    <ScrollView
-      style={styles.recommendationsList}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.recommendationsList}>
       {recommendations?.map((rec, index) => (
         <View key={index} style={styles.recommendationItem}>
           <View style={styles.recommendationHeader}>
@@ -258,7 +251,7 @@ const RecommendationsSection = ({ recommendations, onExport }) => (
           <Text style={styles.recommendationDetails}>{rec.details}</Text>
         </View>
       ))}
-    </ScrollView>
+    </View>
 
     <TouchableOpacity style={styles.exportButton} onPress={onExport}>
       <LinearGradient
@@ -691,7 +684,6 @@ export default function AISecurityAgent() {
         colors={[COLORS.black, COLORS.black, COLORS.cardBackground]}
         style={styles.background}
       />
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
@@ -700,7 +692,10 @@ export default function AISecurityAgent() {
           <ScrollView
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: 30 },
+            ]}
           >
             {/* Header */}
             <HeaderSection onAnalyze={handleAnalyze} loading={loading} />
@@ -1065,7 +1060,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,215,0,0.1)",
   },
   recommendationsList: {
-    maxHeight: 200,
     marginBottom: 16,
   },
   recommendationItem: {
@@ -1160,7 +1154,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   chatMessages: {
-    maxHeight: 300,
     padding: 16,
   },
   welcomeMessage: {
