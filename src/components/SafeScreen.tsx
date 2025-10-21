@@ -14,7 +14,7 @@ export default function SafeScreen({ children }: SafeScreenProps) {
     <View
       style={[
         styles.container,
-        { paddingTop: 10, backgroundColor: COLORS.black },
+        { paddingTop: insets.top + 5, backgroundColor: COLORS.black },
       ]}
     >
       {children}

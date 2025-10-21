@@ -115,7 +115,7 @@ const DeviceSecurityScreen = () => {
             <Ionicons name="phone-portrait-outline" size={36} color="#fff" />
             <Text style={styles.headerTitle}>Device Security</Text>
             <Text style={styles.headerSubtitle}>
-              Comprehensive analysis of your device's security status and
+              Comprehensive analysis of your device&apos;s security status and
               potential vulnerabilities
             </Text>
           </LinearGradient>

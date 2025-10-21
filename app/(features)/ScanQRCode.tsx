@@ -15,6 +15,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInUp, SlideInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import { API_URL } from "@/src/constants/api";
 
 const { width } = Dimensions.get("window");
 const COLORS = { primary: "#00bf8f" };
@@ -23,13 +24,10 @@ export default function ScanQRCode() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
-  const [securityLevel, setSecurityLevel] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [riskType, setRiskType] = useState<"safe" | "warning" | "danger">(
-    "safe"
-  );
   const [qrAnalysis, setQrAnalysis] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
+  // ===== HANDLE CAMERA PERMISSION =====
   if (!permission) {
     return (
       <View style={styles.centerContainer}>
@@ -41,16 +39,12 @@ export default function ScanQRCode() {
   if (!permission.granted) {
     return (
       <SafeAreaView style={styles.container}>
-        <LinearGradient
-          colors={["#001510", COLORS.primary]}
-          style={styles.permissionCard}
-        >
+        <LinearGradient colors={["#000", "#000"]} style={styles.permissionCard}>
           <Ionicons name="camera-outline" size={64} color="#fff" />
           <Text style={styles.permissionTitle}>Camera Access Required</Text>
           <Text style={styles.permissionText}>
             Armorax needs camera access to scan QR codes and analyze their
-            security. Your privacy is protected - we only process the QR
-            content.
+            security. Your privacy is protected.
           </Text>
           <TouchableOpacity
             onPress={requestPermission}
@@ -72,14 +66,14 @@ export default function ScanQRCode() {
     );
   }
 
-  // ===== QR SCAN HANDLER =====
+  // ===== SCAN HANDLER =====
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
     setScanned(true);
     setScanResult(data);
     setLoading(true);
 
     try {
-      const response = await fetch("http://<YOUR_BACKEND_URL>/api/qr/analyze", {
+      const response = await fetch(`${API_URL}/qr/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: data }),
@@ -87,34 +81,28 @@ export default function ScanQRCode() {
 
       const result = await response.json();
 
-      if (result.success) {
-        setSecurityLevel(result.securityLevel);
-        setRiskType(result.riskType);
-        setQrAnalysis(result);
+      if (response.ok && result?.analysis) {
+        setQrAnalysis(result.analysis);
       } else {
-        setSecurityLevel("Analysis Failed");
-        setRiskType("warning");
+        Alert.alert("Analysis Failed", "Could not analyze the QR code.");
         setQrAnalysis(null);
       }
-    } catch (error) {
-      console.error("QR Analysis Error:", error);
+    } catch (err) {
+      console.error("QR Analysis Error:", err);
       Alert.alert("Error", "Unable to analyze this QR code right now.");
-      setSecurityLevel("Error Fetching Data");
-      setRiskType("warning");
-      setQrAnalysis(null);
     } finally {
       setLoading(false);
     }
   };
 
-  // ===== COLOR + ICON HELPERS =====
+  // ===== UI HELPERS =====
   const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case "safe":
+    switch (risk?.toLowerCase()) {
+      case "low":
         return "#00ffcc";
-      case "warning":
+      case "medium":
         return "#FFD700";
-      case "danger":
+      case "high":
         return "#ff4d4d";
       default:
         return "#888";
@@ -122,18 +110,19 @@ export default function ScanQRCode() {
   };
 
   const getRiskIcon = (risk: string) => {
-    switch (risk) {
-      case "safe":
+    switch (risk?.toLowerCase()) {
+      case "low":
         return "shield-checkmark";
-      case "warning":
+      case "medium":
         return "warning";
-      case "danger":
+      case "high":
         return "alert-circle";
       default:
         return "help-circle";
     }
   };
 
+  // ===== MAIN RENDER =====
   return (
     <SafeAreaView style={styles.container}>
       {!scanned ? (
@@ -147,17 +136,10 @@ export default function ScanQRCode() {
               colors={[COLORS.primary, "#001510"]}
               style={styles.headerCard}
             >
-              <View style={styles.headerIcon}>
-                <Ionicons name="qr-code-outline" size={32} color="#fff" />
-                <View style={styles.liveIndicator}>
-                  <View style={styles.liveDot} />
-                  <Text style={styles.liveText}>LIVE</Text>
-                </View>
-              </View>
+              <Ionicons name="qr-code-outline" size={32} color="#fff" />
               <Text style={styles.title}>QR Security Scanner</Text>
               <Text style={styles.subtitle}>
-                Scan any QR code to instantly analyze security risks and
-                potential threats
+                Scan any QR code to instantly analyze security risks
               </Text>
             </LinearGradient>
           </Animated.View>
@@ -185,136 +167,92 @@ export default function ScanQRCode() {
         </View>
       ) : (
         // ===== RESULT VIEW =====
-        <Animated.View
-          entering={SlideInDown.duration(700)}
-          style={styles.resultsContainer}
-        >
-          <ScrollView
-            contentContainerStyle={styles.resultsContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.resultHeader}>
-              <LinearGradient
-                colors={[COLORS.primary, "#001510"]}
-                style={styles.resultHeaderCard}
-              >
-                <Ionicons
-                  name={getRiskIcon(riskType)}
-                  size={48}
-                  color={getRiskColor(riskType)}
-                />
-                <Text style={styles.resultTitle}>Scan Complete</Text>
-                <Text style={styles.resultSubtitle}>
-                  QR code analyzed for security risks
+        <Animated.View entering={SlideInDown.duration(700)}>
+          <ScrollView contentContainerStyle={styles.resultsContent}>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={styles.loadingText}>
+                  Analyzing security risks...
                 </Text>
-              </LinearGradient>
-            </View>
-
-            <View style={styles.resultDetails}>
-              {/* ===== SECURITY ASSESSMENT ===== */}
-              <View style={styles.securityStatusCard}>
-                <View style={styles.statusHeader}>
-                  <Text style={styles.statusLabel}>Security Assessment</Text>
-                  <View
-                    style={[
-                      styles.riskBadge,
-                      { backgroundColor: getRiskColor(riskType) },
-                    ]}
+              </View>
+            ) : (
+              qrAnalysis && (
+                <View>
+                  {/* HEADER */}
+                  <LinearGradient
+                    colors={[COLORS.primary, "#001510"]}
+                    style={styles.resultHeaderCard}
                   >
                     <Ionicons
-                      name={getRiskIcon(riskType)}
-                      size={14}
-                      color="#000"
+                      name={getRiskIcon(qrAnalysis.riskLevel)}
+                      size={48}
+                      color={getRiskColor(qrAnalysis.riskLevel)}
                     />
-                    <Text style={styles.riskBadgeText}>{securityLevel}</Text>
-                  </View>
-                </View>
+                    <Text style={styles.resultTitle}>Scan Complete</Text>
+                    <Text style={styles.resultSubtitle}>
+                      Risk Level: {qrAnalysis.riskLevel?.toUpperCase()}
+                    </Text>
+                  </LinearGradient>
 
-                {loading ? (
-                  <View style={styles.loadingSection}>
-                    <ActivityIndicator size="large" color={COLORS.primary} />
-                    <Text style={styles.loadingText}>
-                      Analyzing security risks...
+                  {/* BASIC DETAILS */}
+                  <View style={styles.infoCard}>
+                    <Text style={styles.infoLabel}>Scanned URL:</Text>
+                    <Text style={styles.infoValue} selectable>
+                      {qrAnalysis.scannedUrl}
+                    </Text>
+
+                    <Text style={styles.infoLabel}>Domain:</Text>
+                    <Text style={styles.infoValue}>{qrAnalysis.domain}</Text>
+
+                    <Text style={styles.infoLabel}>Protocol:</Text>
+                    <Text style={styles.infoValue}>{qrAnalysis.protocol}</Text>
+
+                    <Text style={styles.infoLabel}>IP Address:</Text>
+                    <Text style={styles.infoValue}>{qrAnalysis.ipAddress}</Text>
+
+                    <Text style={styles.infoLabel}>SSL Valid:</Text>
+                    <Text style={styles.infoValue}>
+                      {qrAnalysis.sslValid ? "✅ Yes" : "❌ No"}
+                    </Text>
+
+                    <Text style={styles.infoLabel}>HTTP Status:</Text>
+                    <Text style={styles.infoValue}>
+                      {qrAnalysis.httpStatus}
                     </Text>
                   </View>
-                ) : (
-                  <Text style={styles.securityDescription}>
-                    {riskType === "safe"
-                      ? "This QR code appears to be safe based on our analysis."
-                      : riskType === "warning"
-                      ? "Proceed with caution. This QR code may pose some risks."
-                      : "High risk detected. Avoid interacting with this QR code."}
-                  </Text>
-                )}
-              </View>
 
-              {/* ===== SCANNED CONTENT ===== */}
-              <View style={styles.contentCard}>
-                <View style={styles.cardHeader}>
-                  <Ionicons
-                    name="document-text-outline"
-                    size={20}
-                    color={COLORS.primary}
-                  />
-                  <Text style={styles.cardTitle}>Scanned Content</Text>
-                </View>
-                <View style={styles.contentBox}>
-                  <Text style={styles.contentText} selectable>
-                    {scanResult}
-                  </Text>
-                </View>
-                <Text style={styles.contentType}>
-                  Type:{" "}
-                  {scanResult?.startsWith("http")
-                    ? "Website URL"
-                    : scanResult?.startsWith("tel")
-                    ? "Phone Number"
-                    : scanResult?.startsWith("mailto")
-                    ? "Email Address"
-                    : "Text Content"}
-                </Text>
-              </View>
-
-              {/* ===== BACKEND RESPONSE DETAILS ===== */}
-              {!loading && qrAnalysis && (
-                <View style={styles.contentCard}>
-                  <View style={styles.cardHeader}>
-                    <Ionicons
-                      name="analytics-outline"
-                      size={20}
-                      color={COLORS.primary}
-                    />
-                    <Text style={styles.cardTitle}>Detailed Analysis</Text>
+                  {/* WHOIS DETAILS */}
+                  <View style={styles.infoCard}>
+                    <Text style={styles.cardHeaderText}>WHOIS Information</Text>
+                    <Text style={styles.infoValue}>
+                      Registrar: {qrAnalysis.whois?.registrar}
+                    </Text>
+                    <Text style={styles.infoValue}>
+                      Country: {qrAnalysis.whois?.country}
+                    </Text>
+                    <Text style={styles.infoValue}>
+                      Created On: {qrAnalysis.whois?.creationDate}
+                    </Text>
                   </View>
 
-                  <Text style={styles.contentText}>
-                    Security Level: {qrAnalysis.securityLevel}
-                  </Text>
-                  <Text style={styles.contentText}>
-                    Risk Type: {qrAnalysis.riskType.toUpperCase()}
-                  </Text>
-                  <Text style={styles.contentText}>
-                    Domain Status: {qrAnalysis.domainStatus}
-                  </Text>
-
-                  {qrAnalysis.metadata?.title && (
-                    <Text style={styles.contentText}>
-                      Title: {qrAnalysis.metadata.title}
+                  {/* FLAGS */}
+                  <View style={styles.infoCard}>
+                    <Text style={styles.cardHeaderText}>Threat Indicators</Text>
+                    <Text style={styles.infoValue}>
+                      Suspicious: {qrAnalysis.isSuspicious ? "⚠️ Yes" : "✅ No"}
                     </Text>
-                  )}
-
-                  {qrAnalysis.metadata?.description && (
-                    <Text style={[styles.contentText, { fontStyle: "italic" }]}>
-                      {qrAnalysis.metadata.description}
+                    <Text style={styles.infoValue}>
+                      Phishing Detected:{" "}
+                      {qrAnalysis.isPhishing ? "🚨 Yes" : "✅ No"}
                     </Text>
-                  )}
+                  </View>
 
-                  {qrAnalysis.suggestions?.length > 0 && (
-                    <View style={{ marginTop: 8 }}>
-                      <Text style={[styles.cardTitle, { fontSize: 14 }]}>
-                        Suggestions:
-                      </Text>
-                      {qrAnalysis.suggestions.map(
+                  {/* RECOMMENDATIONS */}
+                  {qrAnalysis.recommendations?.length > 0 && (
+                    <View style={styles.infoCard}>
+                      <Text style={styles.cardHeaderText}>Recommendations</Text>
+                      {qrAnalysis.recommendations.map(
                         (tip: string, idx: number) => (
                           <Text key={idx} style={styles.tipText}>
                             • {tip}
@@ -324,59 +262,56 @@ export default function ScanQRCode() {
                     </View>
                   )}
 
-                  <Text
-                    style={{
-                      color: "rgba(255,255,255,0.6)",
-                      fontSize: 11,
-                      marginTop: 10,
-                      textAlign: "right",
-                    }}
-                  >
-                    Scanned at:{" "}
-                    {new Date(qrAnalysis.scannedAt).toLocaleTimeString()}
+                  {/* TIMESTAMP */}
+                  <Text style={styles.timestamp}>
+                    ⏱ Scanned at:{" "}
+                    {new Date(qrAnalysis.timestamp).toLocaleString()}
                   </Text>
-                </View>
-              )}
 
-              {/* ===== ACTIONS ===== */}
-              <View style={styles.actionsGrid}>
-                {scanResult && scanResult.startsWith("http") && !loading && (
-                  <TouchableOpacity
-                    style={styles.primaryAction}
-                    onPress={() => Linking.openURL(scanResult)}
-                    activeOpacity={0.8}
-                  >
-                    <LinearGradient
-                      colors={[COLORS.primary, "#007a5c"]}
-                      style={styles.primaryActionGradient}
+                  {/* ACTION BUTTONS */}
+                  <View style={styles.actionsGrid}>
+                    {scanResult?.startsWith("http") && (
+                      <TouchableOpacity
+                        style={styles.primaryAction}
+                        onPress={() => Linking.openURL(scanResult)}
+                      >
+                        <LinearGradient
+                          colors={[COLORS.primary, "#007a5c"]}
+                          style={styles.primaryActionGradient}
+                        >
+                          <Ionicons
+                            name="open-outline"
+                            size={20}
+                            color="#fff"
+                          />
+                          <Text style={styles.primaryActionText}>
+                            Open Link
+                          </Text>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    )}
+
+                    <TouchableOpacity
+                      style={styles.secondaryAction}
+                      onPress={() => {
+                        setScanned(false);
+                        setScanResult(null);
+                        setQrAnalysis(null);
+                      }}
                     >
-                      <Ionicons name="open-outline" size={20} color="#fff" />
-                      <Text style={styles.primaryActionText}>Open Link</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  style={styles.secondaryAction}
-                  onPress={() => {
-                    setScanned(false);
-                    setScanResult(null);
-                    setSecurityLevel(null);
-                    setRiskType("safe");
-                    setQrAnalysis(null);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name="scan-outline"
-                    size={20}
-                    color={COLORS.primary}
-                  />
-                  <Text style={styles.secondaryActionText}>
-                    Scan Another QR
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+                      <Ionicons
+                        name="scan-outline"
+                        size={20}
+                        color={COLORS.primary}
+                      />
+                      <Text style={styles.secondaryActionText}>
+                        Scan Another QR
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )
+            )}
           </ScrollView>
         </Animated.View>
       )}
@@ -411,7 +346,6 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.8)",
     fontSize: 16,
     textAlign: "center",
-    lineHeight: 22,
     marginBottom: 32,
   },
   permissionButton: { width: "100%", borderRadius: 16, overflow: "hidden" },
@@ -430,23 +364,6 @@ const styles = StyleSheet.create({
   scannerContainer: { flex: 1, padding: 16 },
   headerSection: { marginBottom: 24 },
   headerCard: { borderRadius: 20, padding: 24, alignItems: "center" },
-  headerIcon: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-  liveIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.2)",
-    padding: 6,
-    borderRadius: 12,
-    marginLeft: 8,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#00ffcc",
-    marginRight: 4,
-  },
-  liveText: { color: "#fff", fontSize: 10, fontWeight: "700" },
   title: {
     color: "#fff",
     fontSize: 26,
@@ -458,17 +375,16 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.8)",
     fontSize: 14,
     textAlign: "center",
-    lineHeight: 20,
   },
-  scannerSection: { alignItems: "center", marginBottom: 24 },
+  scannerSection: { alignItems: "center" },
   scannerFrame: {
     width: width * 0.75,
     height: width * 0.75,
     borderRadius: 20,
     overflow: "hidden",
-    marginBottom: 16,
     borderWidth: 2,
     borderColor: "rgba(0,191,143,0.3)",
+    marginBottom: 16,
   },
   scanner: { width: "100%", height: "100%" },
   cornerTL: {
@@ -518,17 +434,13 @@ const styles = StyleSheet.create({
     right: "10%",
     height: 2,
     backgroundColor: "#00bf8f",
-    shadowColor: "#00bf8f",
-    shadowOpacity: 0.8,
   },
   scanInstruction: {
     color: "rgba(255,255,255,0.7)",
     fontSize: 14,
     textAlign: "center",
   },
-  resultsContainer: { flex: 1, backgroundColor: "#000" },
   resultsContent: { padding: 16 },
-  resultHeader: { marginBottom: 20 },
   resultHeaderCard: { borderRadius: 20, padding: 24, alignItems: "center" },
   resultTitle: {
     color: "#fff",
@@ -536,69 +448,39 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginTop: 12,
   },
-  resultSubtitle: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  resultDetails: { gap: 16 },
-  securityStatusCard: {
+  resultSubtitle: { color: "rgba(255,255,255,0.8)", fontSize: 14 },
+  infoCard: {
     backgroundColor: "rgba(255,255,255,0.05)",
     borderRadius: 16,
     padding: 20,
+    marginVertical: 8,
   },
-  statusHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  infoLabel: {
+    color: "#00bf8f",
+    fontWeight: "700",
+    marginTop: 6,
   },
-  statusLabel: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  riskBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 4,
-    borderRadius: 8,
-  },
-  riskBadgeText: {
-    color: "#000",
-    fontSize: 12,
-    fontWeight: "800",
-    marginLeft: 4,
-  },
-  loadingSection: { alignItems: "center", paddingVertical: 20 },
-  loadingText: {
-    color: COLORS.primary,
+  infoValue: {
+    color: "#fff",
     fontSize: 14,
-    fontWeight: "600",
-    marginTop: 12,
   },
-  securityDescription: {
-    color: "rgba(255,255,255,0.9)",
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  contentCard: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 16,
-    padding: 20,
-  },
-  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-  cardTitle: { color: "#fff", fontSize: 16, fontWeight: "700", marginLeft: 8 },
-  contentBox: {
-    backgroundColor: "rgba(0,0,0,0.3)",
-    borderRadius: 8,
-    padding: 12,
+  cardHeaderText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
     marginBottom: 8,
   },
-  contentText: { color: "#fff", fontSize: 14, lineHeight: 18 },
-  contentType: {
+  tipText: { color: "rgba(255,255,255,0.85)", fontSize: 13, marginTop: 4 },
+  timestamp: {
     color: "rgba(255,255,255,0.6)",
     fontSize: 12,
-    fontWeight: "500",
+    textAlign: "right",
+    marginTop: 8,
   },
-  tipText: { color: "rgba(255,255,255,0.85)", fontSize: 13, marginTop: 4 },
-  actionsGrid: { gap: 12 },
-  primaryAction: { borderRadius: 16, overflow: "hidden" },
+  loadingContainer: { alignItems: "center", marginTop: 50 },
+  loadingText: { color: COLORS.primary, marginTop: 12 },
+  actionsGrid: { marginTop: 16 },
+  primaryAction: { borderRadius: 16, overflow: "hidden", marginBottom: 10 },
   primaryActionGradient: {
     flexDirection: "row",
     alignItems: "center",
