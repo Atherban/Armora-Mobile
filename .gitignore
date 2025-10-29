@@ -3,6 +3,8 @@
 # dependencies
 node_modules/
 
+draw.tldr
+
 # Expo
 .expo/
 dist/

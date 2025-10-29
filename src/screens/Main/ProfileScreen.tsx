@@ -191,7 +191,7 @@ const ProfileScreen = () => {
           <TouchableOpacity
             style={styles.footerButton}
             onPress={() =>
-              Linking.openURL("https://yourdomain.com/privacy-policy")
+              Linking.openURL("https://armoraxprivacy.netlify.app/")
             }
             accessibilityRole="link"
             accessibilityLabel="Privacy Policy. Opens in browser."
@@ -203,7 +203,7 @@ const ProfileScreen = () => {
           <TouchableOpacity
             style={styles.footerButton}
             onPress={() =>
-              Linking.openURL("https://yourdomain.com/terms-of-service")
+              Linking.openURL("https://termsandservice.netlify.app/")
             }
             accessibilityRole="link"
             accessibilityLabel="Terms of Service. Opens in browser."

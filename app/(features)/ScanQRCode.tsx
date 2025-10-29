@@ -84,7 +84,7 @@ const PermissionScreen = ({
       <Text style={styles.permissionTitle}>Camera Access Required</Text>
       <Text style={styles.permissionText}>
         Armorax needs camera access to scan QR codes and analyze their security.
-        Your privacy is protected - we don't store any images or videos.
+        Your privacy is protected - we don&apos;t store any images or videos.
       </Text>
       <TouchableOpacity
         onPress={onRequestPermission}
