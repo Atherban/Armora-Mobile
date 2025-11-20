@@ -5,12 +5,18 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/AppIcons/appstore.png",
-    "scheme": "Armora-X",
+    "scheme": "armora",
     "extra": {
-      "apiUrl": "http://192.168.1.5:4000"
+      "apiUrl": "http://192.168.1.5:4000",
+      "router": {},
+      "eas": {
+        "projectId": "880d7e87-3257-4093-b451-d21460fe5904"
+      }
     },
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+
+    "newArchEnabled": false,
+
     "ios": {
       "supportsTablet": true
     },
@@ -20,7 +26,9 @@
         "foregroundImage": "./src/assets/AppIcons/playstore.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["android.permission.CAMERA"],
+      "package": "com.atherban.ArmoraX"
     },
     "web": {
       "output": "static",

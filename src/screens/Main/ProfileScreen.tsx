@@ -157,7 +157,9 @@ const ProfileScreen = () => {
             {/* Contact Us: opens mail client */}
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => Linking.openURL("mailto:support@yourdomain.com")}
+              onPress={() =>
+                Linking.openURL("mailto:dasatherban0981@gmail.com")
+              }
               accessibilityRole="button"
               accessibilityLabel="Contact Us. Opens your email app."
             >
